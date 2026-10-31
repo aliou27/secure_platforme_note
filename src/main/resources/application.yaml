@@ -5,6 +5,10 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+
   datasource:
     url: jdbc:postgresql://127.0.0.1:5432/secure_notes_db
     username: notes_app
