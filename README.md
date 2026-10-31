@@ -192,6 +192,7 @@ curl -i -X POST http://localhost:8080/api/auth/logout -H "Authorization: Bearer 
 │   ├── schema.sql              Tables, indexes and the updated_at trigger
 │   ├── audit_append_only.sql   Makes audit_logs append-only
 │   ├── roles.sql               Applies the role split to an existing local database
+│   ├── Dockerfile              PostgreSQL image with the init scripts baked in
 │   └── docker/init.sh          First-start initialization for the Docker database
 └── src/main/java/com/project/secure_platforme/
     ├── auth/                   Register, login, logout, current user
