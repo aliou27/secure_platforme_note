@@ -4,7 +4,12 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -41,11 +46,25 @@ public class JwtConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(SecretKey jwtSigningKey, JwtProperties properties) {
+    public JwtDecoder jwtDecoder(SecretKey jwtSigningKey, JwtProperties properties, TokenRevocationService revocationService) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(jwtSigningKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
-        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.issuer()));
+
+        OAuth2TokenValidator<Jwt> notRevoked = jwt -> {
+            if (jwt.getId() == null) {
+                return OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Token has no id", null));
+            }
+            if (revocationService.isRevoked(jwt.getId())) {
+                return OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Token has been revoked", null));
+            }
+            return OAuth2TokenValidatorResult.success();
+        };
+
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer(properties.issuer()),
+                notRevoked
+        ));
         return decoder;
     }
 }

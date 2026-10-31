@@ -40,6 +40,12 @@ public class AuthController {
         return authService.login(request.username(), request.password());
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal Jwt jwt) {
+        authService.logout(jwt);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal Jwt jwt) {
         Long userId = Long.valueOf(jwt.getSubject());
