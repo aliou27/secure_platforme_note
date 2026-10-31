@@ -1,1 +1,0 @@
-# secure_platforme_notes
