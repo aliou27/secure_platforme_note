@@ -10,15 +10,15 @@ spring:
       fail-on-unknown-properties: true
 
   datasource:
-    url: jdbc:postgresql://127.0.0.1:5432/secure_notes_db
-    username: notes_app
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/secure_notes_db}
+    username: ${DB_USERNAME:notes_app}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     open-in-view: false
     properties:
       hibernate:
@@ -31,3 +31,9 @@ app:
     secret: ${JWT_SECRET}
     issuer: secure-notes
     expiration: 15m
+
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:false}

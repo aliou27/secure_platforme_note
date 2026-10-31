@@ -1,13 +1,12 @@
 package com.project.secure_platforme.audit;
 
+import com.project.secure_platforme.security.ClientAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -46,11 +45,8 @@ public class AuditService {
     }
 
     private static InetAddress clientAddress() {
-        if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
-            return null;
-        }
-        String remoteAddress = attributes.getRequest().getRemoteAddr();
-        if (remoteAddress == null) {
+        String remoteAddress = ClientAddress.current();
+        if ("unknown".equals(remoteAddress)) {
             return null;
         }
         try {
