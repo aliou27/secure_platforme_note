@@ -11,5 +11,6 @@ public enum AuditEventType {
     NOTE_CREATED,
     NOTE_UPDATED,
     NOTE_DELETED,
+    NOTES_EXPORTED,
     UNAUTHORIZED_ACCESS
 }

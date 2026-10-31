@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -44,6 +47,17 @@ public class NoteController {
                                  @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int page,
                                  @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
         return NotePageResponse.from(noteService.list(currentUserId(jwt), page, size));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@AuthenticationPrincipal Jwt jwt) {
+        NoteService.PdfExport export = noteService.exportPdf(currentUserId(jwt));
+        ContentDisposition disposition = ContentDisposition.attachment().filename(export.filename()).build();
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentLength(export.content().length)
+                .body(export.content());
     }
 
     @GetMapping("/{id}")

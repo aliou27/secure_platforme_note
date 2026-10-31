@@ -11,21 +11,32 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Service
 public class NoteService {
 
+    public static final int MAX_EXPORT_NOTES = 1000;
+
     private static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id"));
+    private static final DateTimeFormatter FILE_DATE = DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneOffset.UTC);
 
     private final NoteRepository noteRepository;
     private final UserService userService;
     private final AuditService auditService;
+    private final NotePdfExporter notePdfExporter;
 
-    public NoteService(NoteRepository noteRepository, UserService userService, AuditService auditService) {
+    public NoteService(NoteRepository noteRepository,
+                       UserService userService,
+                       AuditService auditService,
+                       NotePdfExporter notePdfExporter) {
         this.noteRepository = noteRepository;
         this.userService = userService;
         this.auditService = auditService;
+        this.notePdfExporter = notePdfExporter;
     }
 
     @Transactional
@@ -64,6 +75,23 @@ public class NoteService {
         auditService.record(AuditEventType.NOTE_DELETED, username, Map.of("noteId", noteId));
     }
 
+    @Transactional(readOnly = true)
+    public PdfExport exportPdf(Long userId) {
+        User owner = userService.getById(userId);
+        Page<Note> notes = noteRepository.findAllByUserId(userId, PageRequest.of(0, MAX_EXPORT_NOTES, NEWEST_FIRST));
+        Instant exportedAt = Instant.now();
+
+        byte[] content = notePdfExporter.export(owner.getUsername(), notes.getContent(), notes.getTotalElements(), exportedAt);
+
+        auditService.record(AuditEventType.NOTES_EXPORTED, owner.getUsername(), Map.of(
+                "exportedNotes", notes.getNumberOfElements(),
+                "totalNotes", notes.getTotalElements()
+        ));
+
+        String filename = "notes-" + owner.getUsername() + "-" + FILE_DATE.format(exportedAt) + ".pdf";
+        return new PdfExport(filename, content);
+    }
+
     private Note findOwned(Long userId, Long noteId, String action) {
         return noteRepository.findByIdAndUserId(noteId, userId)
                 .orElseThrow(() -> {
@@ -77,5 +105,12 @@ public class NoteService {
                     }
                     return new NoteNotFoundException();
                 });
+    }
+
+    public record PdfExport(String filename, byte[] content) {
+        @Override
+        public String toString() {
+            return "PdfExport{filename='" + filename + "', bytes=" + content.length + "}";
+        }
     }
 }
