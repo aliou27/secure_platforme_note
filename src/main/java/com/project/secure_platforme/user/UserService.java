@@ -1,5 +1,6 @@
 package com.project.secure_platforme.user;
 
+import com.project.secure_platforme.exception.InvalidCredentialsException;
 import com.project.secure_platforme.exception.UsernameAlreadyTakenException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,6 +35,12 @@ public class UserService {
         } catch (DataIntegrityViolationException e) {
             throw new UsernameAlreadyTakenException();
         }
+    }
+
+    @Transactional(readOnly = true)
+    public User getById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new InvalidCredentialsException("Authentication required"));
     }
 
     public static String normalize(String username) {
